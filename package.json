@@ -12,7 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "firebase": "^8.0.0-2020926155854"
+    "firebase": "^0.900.3"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",

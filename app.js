@@ -1,25 +1,20 @@
-import firebase from 'firebase/app';
-import 'firebase/auth';
-import 'firebase/analytics';
-import 'firebase/functions';
-import 'firebase/storage';
-import 'firebase/firestore';
-import 'firebase/messaging';
-import 'firebase/performance';
-import "firebase/installations";
-import 'firebase/database';
+import { SDK_VERSION, initializeApp } from 'firebase/app';
+import { getAuth, 
+    onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+import { getFunctions } from 'firebase/functions';
+import { getFirestore, getDoc, doc, updateDoc, increment } from 'firebase/firestore';
+// import 'firebase/analytics';
+// import { getStorage, ref, uploadString, getDownloadURL } from '@firebase/storage-exp';
+// import { getMessaging }  from 'firebase/messaging';
+import { getPerformance } from 'firebase/performance';
+import { getRemoteConfig } from 'firebase/remote-config';
+import {getInstallations} from "@firebase/installations";
+// import 'firebase/database';
 
-async function callFunctions() {
-    console.log('CALLING FUNCTION');
-    const functions = firebase.functions();
-    const callTest = functions.httpsCallable('callTest');
-    const result = await callTest({data: 'blah'});
-    console.log('FUNCTIONS result:', result.data);
-}
 async function main() {
     console.log('MAIN START');
     
-    const app = firebase.initializeApp({
+    const app = initializeApp({
         apiKey: "AIzaSyB3BYpqf_FrZ2WQidSh9Ml04kuXJp3fvVk",
         authDomain: "chholland-test.firebaseapp.com",
         databaseURL: "https://chholland-test.firebaseio.com",
@@ -30,68 +25,41 @@ async function main() {
         measurementId: "G-RV2DRJVZ88"
     });
     
-    var unsubscribe = firebase.auth().onAuthStateChanged(
-        (user) => {
-            console.log("0");
-          unsubscribe();
-        },
-        (a) => {},
-        () => {
-          // this doesn't run
-          console.log("1");
-        }
-      );
-    
-    console.log('FIREBASE VERSION', firebase.SDK_VERSION);
-    
-    
-    firebase.setLogLevel('warn');
-    firebase.onLog(({message}) => { console.log('ONLOG WORKS' + message)}, {level: 'debug'});
+    console.log('FIREBASE VERSION', SDK_VERSION);
     
     console.log('CALLING AUTH');
-    const auth = firebase.auth();
-    const unsub = auth.onAuthStateChanged(user => {
-        unsub();
-        console.log('hi');
-    });
-    auth.signInWithEmailAndPassword("testtest@test.test", "pass1234").then(async (cred) => {
-        console.log('AUTH: signed in user', cred.user.email);
-        console.log('CALLING STORAGE');
-        const storage = firebase.storage();
-        const storageRef = storage.ref('/test.txt');
-        storageRef.getDownloadURL().then(url => {
-            console.log('STORAGE download url', url);
-        });
-        await storageRef.putString('abc');
-        const url = await storageRef.getDownloadURL();
-        const response = await fetch(url);
-        const data = await response.text();
-        console.log('Returned data:', data);
-    });
-    console.log('CALLING DATABASE');
-    const db = firebase.database();
-    firebase.analytics.isSupported();
-    firebase.analytics();
-    console.log('FIS TOKEN REFRESH');
-    firebase.installations();
-    firebase.installations().getToken(true);
-    const firestore = firebase.firestore();
-    console.log('CALLING FIRESTORE');
-    firestore.collection('testCollection')
-        .doc('testDoc')
-        .get()
-        .then(doc => console.log('FIRESTORE results:', doc.data()));
+    await signInWithEmailAndPassword(getAuth(app), 'manualtest@test.com', 'abcd1234');
+
+    onAuthStateChanged(getAuth(app), async (user) => {
+        console.log('user is', user);
     
-    console.log('CALLING MESSAGING');
-    const messaging = firebase.messaging();
-    messaging.getToken().then(token => console.log(token)).catch(e => console.error(e));
-    messaging.requestPermission()
-        .then(() => console.log('MESSAGING: permissions granted'))
-        .catch(() => console.log('MESSAGING: permissions rejected'));
-    console.log('CALLING PERFORMANCE');
-    const performance = firebase.performance();
-    const trace = performance.trace('test');
-    await callFunctions();
+        console.log('CALLING FIRESTORE');
+        const ref = doc(getFirestore(app), 'testCollection/testDoc');
+        console.log('testDoc contents:', JSON.stringify((await getDoc(ref)).data()));
+        await updateDoc(ref, { testField: increment(1) });
+        console.log('testDoc contents after increment:', JSON.stringify((await getDoc(ref)).data()));
+    });
+
+    console.log('INITIALIZING FUNCTIONS');
+    getFunctions(app);
+    console.log('INITIALIZING PERFORMANCE');
+    getPerformance(app);
+    console.log('INITIALIZING REMOTE-CONFIG');
+    getRemoteConfig(app);
+    // console.log('INITIALIZING MESSAGING');
+    // getMessaging(app);
+    console.log('INITIALIZING INSTALLATIONS');
+    getInstallations(app);
+
+    // const functions = getFunctions(app);
+    // const storage = getStorage(app);
+    // const reference = ref(storage, 'manualtest');
+    // const snapshot = await uploadString(reference, 'teststring');
+    // console.log(snapshot.metadata);
+    // const url = await getDownloadURL(reference);
+    // const response = await fetch(url);
+    // const text = await response.text();
+    // console.log('Storage fetched:', text);
     console.log('MAIN END');
 }
 
